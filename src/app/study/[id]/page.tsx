@@ -42,6 +42,13 @@ interface ChatMessage {
   content: string;
 }
 
+interface HistoricalContent {
+  id: string;
+  content: string;
+  created_at?: string;
+  createdAt?: string;
+}
+
 import { fetchApi } from "@/lib/api";
 
 export default function StudyPage() {
@@ -57,6 +64,8 @@ export default function StudyPage() {
   // Notes state
   const [notes, setNotes] = useState("");
   const [notesLoading, setNotesLoading] = useState(false);
+  const [historicalNotes, setHistoricalNotes] = useState<HistoricalContent[]>([]);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Quiz state
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
@@ -66,12 +75,16 @@ export default function StudyPage() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
   const [quizComplete, setQuizComplete] = useState(false);
+  const [historicalQuizzes, setHistoricalQuizzes] = useState<HistoricalContent[]>([]);
+  const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
 
   // Flashcard state
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [flashcardsLoading, setFlashcardsLoading] = useState(false);
   const [currentCard, setCurrentCard] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [historicalFlashcards, setHistoricalFlashcards] = useState<HistoricalContent[]>([]);
+  const [activeFlashcardId, setActiveFlashcardId] = useState<string | null>(null);
 
   // Podcast state
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -86,6 +99,9 @@ export default function StudyPage() {
 
   useEffect(() => {
     fetchMaterial();
+    fetchHistory("notes", true);
+    fetchHistory("quiz", true);
+    fetchHistory("flashcards", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialId]);
 
@@ -106,7 +122,80 @@ export default function StudyPage() {
     }
   }
 
-  async function generateContent(type: "notes" | "quiz" | "flashcards") {
+  function loadContentFromHistory(
+    type: "notes" | "quiz" | "flashcards",
+    historyItem: HistoricalContent
+  ) {
+    if (!historyItem) return;
+
+    if (type === "notes") {
+      setNotes(historyItem.content);
+      setActiveNoteId(historyItem.id);
+    } else if (type === "quiz") {
+      try {
+        let jsonStr = historyItem.content;
+        const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (fenceMatch) jsonStr = fenceMatch[1];
+        const parsed = JSON.parse(jsonStr.trim());
+        setQuiz(parsed);
+        setActiveQuizId(historyItem.id);
+        setCurrentQ(0);
+        setSelectedAnswer(null);
+        setShowExplanation(false);
+        setScore(0);
+        setQuizComplete(false);
+      } catch {
+        console.error("Failed to parse quiz from history");
+      }
+    } else if (type === "flashcards") {
+      try {
+        let jsonStr = historyItem.content;
+        const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (fenceMatch) jsonStr = fenceMatch[1];
+        const parsed = JSON.parse(jsonStr.trim());
+        setFlashcards(parsed);
+        setActiveFlashcardId(historyItem.id);
+        setCurrentCard(0);
+        setFlipped(false);
+      } catch {
+        console.error("Failed to parse flashcards from history");
+      }
+    }
+  }
+
+  async function fetchHistory(
+    type: "notes" | "quiz" | "flashcards",
+    loadFirst = false
+  ) {
+    try {
+      const res = await fetchApi(
+        `/generate?materialId=${materialId}&type=${type}`
+      );
+      const data = await res.json();
+      if (res.ok && data.contents) {
+        if (type === "notes") {
+          setHistoricalNotes(data.contents);
+          if (loadFirst && data.contents.length > 0)
+            loadContentFromHistory("notes", data.contents[0]);
+        } else if (type === "quiz") {
+          setHistoricalQuizzes(data.contents);
+          if (loadFirst && data.contents.length > 0)
+            loadContentFromHistory("quiz", data.contents[0]);
+        } else if (type === "flashcards") {
+          setHistoricalFlashcards(data.contents);
+          if (loadFirst && data.contents.length > 0)
+            loadContentFromHistory("flashcards", data.contents[0]);
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to fetch history for ${type}:`, err);
+    }
+  }
+
+  async function generateContent(
+    type: "notes" | "quiz" | "flashcards",
+    forceRegenerate = false
+  ) {
     const setLoading =
       type === "notes"
         ? setNotesLoading
@@ -118,43 +207,14 @@ export default function StudyPage() {
     try {
       const res = await fetchApi("/generate", {
         method: "POST",
-        body: JSON.stringify({ materialId, type }),
+        body: JSON.stringify({ materialId, type, forceRegenerate }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      if (type === "notes") {
-        setNotes(data.content);
-      } else if (type === "quiz") {
-        try {
-          // Parse quiz JSON, handling potential markdown fences
-          let jsonStr = data.content;
-          const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-          if (fenceMatch) jsonStr = fenceMatch[1];
-          const parsed = JSON.parse(jsonStr.trim());
-          setQuiz(parsed);
-          setCurrentQ(0);
-          setSelectedAnswer(null);
-          setShowExplanation(false);
-          setScore(0);
-          setQuizComplete(false);
-        } catch {
-          console.error("Failed to parse quiz JSON");
-        }
-      } else if (type === "flashcards") {
-        try {
-          let jsonStr = data.content;
-          const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-          if (fenceMatch) jsonStr = fenceMatch[1];
-          const parsed = JSON.parse(jsonStr.trim());
-          setFlashcards(parsed);
-          setCurrentCard(0);
-          setFlipped(false);
-        } catch {
-          console.error("Failed to parse flashcards JSON");
-        }
-      }
+      // Re-fetch history and force active state to new content
+      await fetchHistory(type, true);
     } catch (err) {
       console.error(`Failed to generate ${type}:`, err);
     } finally {
@@ -305,20 +365,55 @@ export default function StudyPage() {
         {/* ============ NOTES TAB ============ */}
         {activeTab === "notes" && (
           <div>
-            {!notes && !notesLoading && (
+            {historicalNotes.length === 0 && !notesLoading && (
               <EmptyState
                 title="Generate Study Notes"
                 description="AI will analyze your material and create structured, comprehensive notes."
                 buttonLabel="Generate Notes"
                 onAction={() => generateContent("notes")}
-                icon={<FileText className="w-8 h-8 text-violet-400" />}
+                icon={<FileText className="w-8 h-8 text-zinc-400" />}
               />
             )}
             {notesLoading && <LoadingState label="Generating notes..." />}
             {notes && (
-              <div className="rounded-xl bg-black border border-zinc-800 p-8">
-                <div className="prose-notes">
-                  <ReactMarkdown>{notes}</ReactMarkdown>
+              <div className="space-y-6">
+                {/* History Selector */}
+                {historicalNotes.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-zinc-400 font-medium">Version:</span>
+                      <select
+                        value={activeNoteId || ""}
+                        onChange={(e) => {
+                          const note = historicalNotes.find(n => n.id === e.target.value);
+                          if (note) loadContentFromHistory("notes", note);
+                        }}
+                        className="bg-black border border-zinc-800 text-sm text-white rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all cursor-pointer"
+                      >
+                        {historicalNotes.map((n, i) => (
+                          <option key={n.id} value={n.id}>
+                            {i === 0 ? "Latest Version" : `Version ${historicalNotes.length - i}`}
+                            {" "}
+                            ({new Date(n.created_at || n.createdAt || Date.now()).toLocaleDateString()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => generateContent("notes", true)}
+                      disabled={notesLoading}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-white hover:bg-zinc-800 text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {notesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-zinc-400" />}
+                      Generate New Notes
+                    </button>
+                  </div>
+                )}
+                
+                <div className="rounded-xl bg-black border border-zinc-800 p-8">
+                  <div className="prose-notes">
+                    <ReactMarkdown>{notes}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             )}
@@ -328,18 +423,50 @@ export default function StudyPage() {
         {/* ============ QUIZ TAB ============ */}
         {activeTab === "quiz" && (
           <div>
-            {quiz.length === 0 && !quizLoading && (
+            {historicalQuizzes.length === 0 && !quizLoading && (
               <EmptyState
                 title="Generate Practice Quiz"
                 description="AI will create multiple-choice questions to test your understanding."
                 buttonLabel="Generate Quiz"
                 onAction={() => generateContent("quiz")}
-                icon={<HelpCircle className="w-8 h-8 text-violet-400" />}
+                icon={<HelpCircle className="w-8 h-8 text-zinc-400" />}
               />
             )}
             {quizLoading && <LoadingState label="Creating quiz questions..." />}
             {quiz.length > 0 && !quizComplete && (
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-2xl mx-auto space-y-6">
+                {/* History Selector */}
+                {historicalQuizzes.length > 0 && (
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-6 mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-zinc-400 font-medium">Version:</span>
+                      <select
+                        value={activeQuizId || ""}
+                        onChange={(e) => {
+                          const q = historicalQuizzes.find(x => x.id === e.target.value);
+                          if (q) loadContentFromHistory("quiz", q);
+                        }}
+                        className="bg-black border border-zinc-800 text-sm text-white rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all cursor-pointer"
+                      >
+                        {historicalQuizzes.map((q, i) => (
+                          <option key={q.id} value={q.id}>
+                            {i === 0 ? "Latest Version" : `Version ${historicalQuizzes.length - i}`}
+                            {" "}
+                            ({new Date(q.created_at || q.createdAt || Date.now()).toLocaleDateString()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => generateContent("quiz", true)}
+                      disabled={quizLoading}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-white hover:bg-zinc-800 text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {quizLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-zinc-400" />}
+                      Generate New Quiz
+                    </button>
+                  </div>
+                )}
                 {/* Progress */}
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-sm text-zinc-400">
@@ -465,20 +592,52 @@ export default function StudyPage() {
         {/* ============ FLASHCARDS TAB ============ */}
         {activeTab === "flashcards" && (
           <div>
-            {flashcards.length === 0 && !flashcardsLoading && (
+            {historicalFlashcards.length === 0 && !flashcardsLoading && (
               <EmptyState
                 title="Generate Flashcards"
                 description="AI creates Q&A flashcards with spaced repetition for optimal retention."
                 buttonLabel="Generate Flashcards"
                 onAction={() => generateContent("flashcards")}
-                icon={<Layers className="w-8 h-8 text-violet-400" />}
+                icon={<Layers className="w-8 h-8 text-zinc-400" />}
               />
             )}
             {flashcardsLoading && (
               <LoadingState label="Creating flashcards..." />
             )}
             {flashcards.length > 0 && (
-              <div className="max-w-lg mx-auto">
+              <div className="max-w-lg mx-auto space-y-6">
+                {/* History Selector */}
+                {historicalFlashcards.length > 0 && (
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-6 mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-zinc-400 font-medium">Version:</span>
+                      <select
+                        value={activeFlashcardId || ""}
+                        onChange={(e) => {
+                          const f = historicalFlashcards.find(x => x.id === e.target.value);
+                          if (f) loadContentFromHistory("flashcards", f);
+                        }}
+                        className="bg-black border border-zinc-800 text-sm text-white rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all cursor-pointer"
+                      >
+                        {historicalFlashcards.map((f, i) => (
+                          <option key={f.id} value={f.id}>
+                            {i === 0 ? "Latest Version" : `Version ${historicalFlashcards.length - i}`}
+                            {" "}
+                            ({new Date(f.created_at || f.createdAt || Date.now()).toLocaleDateString()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => generateContent("flashcards", true)}
+                      disabled={flashcardsLoading}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-white hover:bg-zinc-800 text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {flashcardsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-zinc-400" />}
+                      New Flashcards
+                    </button>
+                  </div>
+                )}
                 {/* Card counter */}
                 <div className="flex items-center justify-between mb-6">
                   <button
