@@ -99,12 +99,14 @@ export default function StudyPage() {
   // Notes state
   const [notes, setNotes] = useState("");
   const [notesLoading, setNotesLoading] = useState(false);
+  const [initialNotesLoading, setInitialNotesLoading] = useState(true);
   const [historicalNotes, setHistoricalNotes] = useState<HistoricalContent[]>([]);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Quiz state
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [initialQuizLoading, setInitialQuizLoading] = useState(true);
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -116,6 +118,7 @@ export default function StudyPage() {
   // Flashcard state
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [flashcardsLoading, setFlashcardsLoading] = useState(false);
+  const [initialFlashcardsLoading, setInitialFlashcardsLoading] = useState(true);
   const [currentCard, setCurrentCard] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [historicalFlashcards, setHistoricalFlashcards] = useState<HistoricalContent[]>([]);
@@ -228,6 +231,10 @@ export default function StudyPage() {
       }
     } catch (err) {
       console.error(`Failed to fetch history for ${type}:`, err);
+    } finally {
+      if (type === "notes") setInitialNotesLoading(false);
+      if (type === "quiz") setInitialQuizLoading(false);
+      if (type === "flashcards") setInitialFlashcardsLoading(false);
     }
   }
 
@@ -546,7 +553,9 @@ export default function StudyPage() {
         {/* ============ NOTES TAB ============ */}
         {activeTab === "notes" && (
           <div>
-            {historicalNotes.length === 0 && !notesLoading && (
+            {initialNotesLoading ? (
+              <LoadingState label="Loading your notes..." />
+            ) : historicalNotes.length === 0 && !notesLoading ? (
               <EmptyState
                 title="Generate Study Notes"
                 description="AI will analyze your material and create structured, comprehensive notes."
@@ -554,9 +563,9 @@ export default function StudyPage() {
                 onAction={() => generateContent("notes")}
                 icon={<FileText className="w-8 h-8 text-zinc-400" />}
               />
-            )}
-            {notesLoading && <LoadingState label="Generating notes..." />}
-            {notes && (
+            ) : notesLoading ? (
+              <LoadingState label="Generating notes..." />
+            ) : notes ? (
               <div className="space-y-6">
                 {/* History Selector */}
                 {historicalNotes.length > 0 && (
@@ -597,14 +606,16 @@ export default function StudyPage() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
         {/* ============ QUIZ TAB ============ */}
         {activeTab === "quiz" && (
           <div>
-            {historicalQuizzes.length === 0 && !quizLoading && (
+            {initialQuizLoading ? (
+              <LoadingState label="Loading quizzes..." />
+            ) : historicalQuizzes.length === 0 && !quizLoading ? (
               <EmptyState
                 title="Generate Practice Quiz"
                 description="AI will create multiple-choice questions to test your understanding."
@@ -612,9 +623,9 @@ export default function StudyPage() {
                 onAction={() => generateContent("quiz")}
                 icon={<HelpCircle className="w-8 h-8 text-zinc-400" />}
               />
-            )}
-            {quizLoading && <LoadingState label="Creating quiz questions..." />}
-            {quiz.length > 0 && !quizComplete && (
+            ) : quizLoading ? (
+              <LoadingState label="Creating quiz questions..." />
+            ) : quiz.length > 0 && !quizComplete ? (
               <div className="max-w-2xl mx-auto space-y-6">
                 {/* History Selector */}
                 {historicalQuizzes.length > 0 && (
@@ -736,9 +747,9 @@ export default function StudyPage() {
                    >
                      {currentQ < quiz.length - 1 ? "Next Question" : "See Results"}
                    </button>
-                 )}
-              </div>
-            )}
+                  )}
+               </div>
+            ) : null}
             {quizComplete && (
               <div className="max-w-md mx-auto text-center py-12 border border-zinc-800 border-dashed rounded-xl bg-black">
                 <div className="w-20 h-20 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-6">
@@ -773,7 +784,9 @@ export default function StudyPage() {
         {/* ============ FLASHCARDS TAB ============ */}
         {activeTab === "flashcards" && (
           <div>
-            {historicalFlashcards.length === 0 && !flashcardsLoading && (
+            {initialFlashcardsLoading ? (
+              <LoadingState label="Loading flashcards..." />
+            ) : historicalFlashcards.length === 0 && !flashcardsLoading ? (
               <EmptyState
                 title="Generate Flashcards"
                 description="AI creates Q&A flashcards with spaced repetition for optimal retention."
@@ -781,11 +794,9 @@ export default function StudyPage() {
                 onAction={() => generateContent("flashcards")}
                 icon={<Layers className="w-8 h-8 text-zinc-400" />}
               />
-            )}
-            {flashcardsLoading && (
+            ) : flashcardsLoading ? (
               <LoadingState label="Creating flashcards..." />
-            )}
-            {flashcards.length > 0 && (
+            ) : flashcards.length > 0 ? (
               <div className="max-w-lg mx-auto space-y-6">
                 {/* History Selector */}
                 {historicalFlashcards.length > 0 && (
@@ -900,7 +911,7 @@ export default function StudyPage() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -979,18 +990,7 @@ export default function StudyPage() {
                   )}
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setActiveTab("notes");
-                  generateContent("notes");
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors text-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                Generate Notes First
-              </button>
-            )}
+            ) : null}
           </div>
         )}
 
