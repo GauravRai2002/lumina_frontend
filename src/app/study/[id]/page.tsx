@@ -307,18 +307,52 @@ export default function StudyPage() {
     }
   }
 
-  async function handleSpeak() {
-    if (isSpeaking) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-        audioRef.current = null;
-      }
+  // Handle Pause
+  function handlePause() {
+    if (audioRef.current && isSpeaking) {
+      audioRef.current.pause();
       setIsSpeaking(false);
-      setTtsLoading(false);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+    }
+  }
+
+  // Handle Resume
+  function handleResume() {
+    if (audioRef.current && !isSpeaking) {
+      audioRef.current.play();
+      setIsSpeaking(true);
+    }
+  }
+
+  // Handle Restart
+  function handleRestart() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    setIsSpeaking(false);
+    setTtsLoading(false);
+    
+    // Clear cache for current note/voice so it forces a fresh restart
+    const cacheKey = `${activeNoteId}:${selectedVoice}`;
+    const cachedUrls = audioCacheRef.current.get(cacheKey) || [];
+    cachedUrls.forEach((url) => URL.revokeObjectURL(url));
+    audioCacheRef.current.delete(cacheKey);
+
+    // Call handleSpeak immediately to rebuild
+    handleSpeak(true);
+  }
+
+  async function handleSpeak(forceStart = false) {
+    if (isSpeaking && !forceStart) {
+      handlePause();
+      return;
+    }
+    if (!isSpeaking && audioRef.current && !forceStart) {
+      handleResume();
       return;
     }
 
@@ -327,7 +361,10 @@ export default function StudyPage() {
     const cacheKey = `${activeNoteId}:${selectedVoice}`;
     const cachedUrls = audioCacheRef.current.get(cacheKey);
 
-    const playChunks = async (urls: string[], signal: AbortSignal) => {
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    const playChunks = async (urls: string[]) => {
       setIsSpeaking(true);
       for (let i = 0; i < urls.length; i++) {
         if (signal.aborted) break;
@@ -345,11 +382,8 @@ export default function StudyPage() {
       audioRef.current = null;
     };
 
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-
     if (cachedUrls && cachedUrls.length > 0) {
-      playChunks(cachedUrls, signal);
+      playChunks(cachedUrls);
       return;
     }
 
@@ -384,9 +418,12 @@ export default function StudyPage() {
           playIndex++;
         }
         if (!signal.aborted) setIsSpeaking(false);
-        audioRef.current = null;
+        if (signal.aborted || playIndex >= chunks.length) {
+            audioRef.current = null;
+        }
       };
 
+      // Sequential Pre-fetching Strategy
       for (let i = 0; i < chunks.length; i++) {
         if (signal.aborted) break;
         
@@ -900,18 +937,19 @@ export default function StudyPage() {
                   </select>
                 </div>
 
-                {/* Play button */}
-                <div className="flex justify-center">
+                {/* Audio controls */}
+                <div className="flex items-center justify-center gap-4">
+                  {/* Play/Pause Button */}
                   <button
-                    onClick={handleSpeak}
-                    disabled={ttsLoading}
+                    onClick={() => handleSpeak(false)}
+                    disabled={ttsLoading && !isSpeaking}
                     className={`inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors text-sm disabled:opacity-60 ${
                       isSpeaking
                         ? "bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700"
                         : "bg-white text-black hover:bg-zinc-200"
                     }`}
                   >
-                    {ttsLoading ? (
+                    {ttsLoading && !isSpeaking && !audioRef.current ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
                         Generating audio...
@@ -919,15 +957,26 @@ export default function StudyPage() {
                     ) : isSpeaking ? (
                       <>
                         <Pause className="w-5 h-5" />
-                        Stop Playing
+                        Pause
                       </>
                     ) : (
                       <>
                         <Play className="w-5 h-5" />
-                        Play Notes
+                        {audioRef.current ? "Resume" : "Play Notes"}
                       </>
                     )}
                   </button>
+
+                  {/* Restart Button (only show if we have started playing or loaded audio) */}
+                  {(isSpeaking || audioRef.current) && (
+                    <button
+                      onClick={handleRestart}
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors text-sm font-medium"
+                      title="Restart from beginning"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
