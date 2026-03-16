@@ -88,8 +88,11 @@ export default function StudyPage() {
 
   // Podcast state
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechRate, setSpeechRate] = useState(1);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState("en-US-AriaNeural");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Cache: key = `${noteId}:${voice}` → blob URL
+  const audioCacheRef = useRef<Map<string, string>>(new Map());
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -213,12 +216,19 @@ export default function StudyPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // Invalidate TTS audio cache for notes when new notes are generated
+      if (type === "notes") {
+        audioCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+        audioCacheRef.current.clear();
+      }
+
       // Re-fetch history and force active state to new content
       await fetchHistory(type, true);
     } catch (err) {
       console.error(`Failed to generate ${type}:`, err);
     } finally {
       setLoading(false);
+
     }
   }
 
@@ -261,20 +271,57 @@ export default function StudyPage() {
     }
   }
 
-  function handleSpeak() {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
+  async function handleSpeak() {
+    // If currently playing, stop
+    if (isSpeaking && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
       setIsSpeaking(false);
       return;
     }
 
-    const textToSpeak = notes || "No notes generated yet.";
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.rate = speechRate;
-    utterance.onend = () => setIsSpeaking(false);
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
+    if (!notes) return;
+
+    const cacheKey = `${activeNoteId}:${selectedVoice}`;
+    const cachedUrl = audioCacheRef.current.get(cacheKey);
+
+    const playAudio = (audioUrl: string) => {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsSpeaking(false);
+      audio.onerror = () => setIsSpeaking(false);
+      audio.play();
+      setIsSpeaking(true);
+    };
+
+    // Serve from cache if available
+    if (cachedUrl) {
+      playAudio(cachedUrl);
+      return;
+    }
+
+    setTtsLoading(true);
+    try {
+      const res = await fetchApi("/tts", {
+        method: "POST",
+        body: JSON.stringify({ text: notes, voice: selectedVoice }),
+      });
+
+      if (!res.ok) throw new Error("TTS request failed");
+
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+
+      // Store in cache
+      audioCacheRef.current.set(cacheKey, audioUrl);
+
+      playAudio(audioUrl);
+    } catch (err) {
+      console.error("TTS failed:", err);
+    } finally {
+      setTtsLoading(false);
+    }
   }
 
   async function handleChatSend() {
@@ -740,47 +787,50 @@ export default function StudyPage() {
 
             {notes ? (
               <div className="space-y-6">
-                {/* Play button */}
-                <button
-                  onClick={handleSpeak}
-                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors text-sm ${
-                    isSpeaking
-                      ? "bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700"
-                      : "bg-white text-black hover:bg-zinc-200"
-                  }`}
-                >
-                  {isSpeaking ? (
-                    <>
-                      <Pause className="w-5 h-5" />
-                      Stop Playing
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5" />
-                      Play Notes
-                    </>
-                  )}
-                </button>
-
-                {/* Speed control */}
+                {/* Voice Selector */}
                 <div className="flex items-center justify-center gap-3">
                   <Volume2 className="w-4 h-4 text-zinc-500" />
-                  <span className="text-sm text-zinc-500 font-medium">Speed:</span>
-                  <div className="flex bg-zinc-900 rounded-md p-1 border border-zinc-800">
-                    {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                      <button
-                        key={rate}
-                        onClick={() => setSpeechRate(rate)}
-                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                          speechRate === rate
-                            ? "bg-zinc-700 text-white shadow-sm"
-                            : "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                        }`}
-                      >
-                        {rate}x
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-sm text-zinc-500 font-medium">Voice:</span>
+                  <select
+                    value={selectedVoice}
+                    onChange={(e) => selectedVoice !== e.target.value && setSelectedVoice(e.target.value)}
+                    disabled={isSpeaking}
+                    className="bg-zinc-900 border border-zinc-800 text-sm text-white rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="en-US-AriaNeural">Aria (Female)</option>
+                    <option value="en-US-GuyNeural">Guy (Male)</option>
+                    <option value="en-US-JennyNeural">Jenny (Female)</option>
+                  </select>
+                </div>
+
+                {/* Play button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleSpeak}
+                    disabled={ttsLoading}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors text-sm disabled:opacity-60 ${
+                      isSpeaking
+                        ? "bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700"
+                        : "bg-white text-black hover:bg-zinc-200"
+                    }`}
+                  >
+                    {ttsLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Generating audio...
+                      </>
+                    ) : isSpeaking ? (
+                      <>
+                        <Pause className="w-5 h-5" />
+                        Stop Playing
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5" />
+                        Play Notes
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             ) : (
@@ -797,6 +847,7 @@ export default function StudyPage() {
             )}
           </div>
         )}
+
 
         {/* ============ CHAT TAB ============ */}
         {activeTab === "chat" && (
