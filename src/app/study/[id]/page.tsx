@@ -137,6 +137,7 @@ export default function StudyPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistoryFetched, setChatHistoryFetched] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -146,6 +147,25 @@ export default function StudyPage() {
     fetchHistory("flashcards", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialId]);
+
+  useEffect(() => {
+    if (activeTab === "chat" && !chatHistoryFetched) {
+      const fetchChatHistory = async () => {
+        try {
+          const res = await fetchApi(`/chat?materialId=${materialId}`);
+          const data = await res.json();
+          if (res.ok && data.messages) {
+            setChatMessages(data.messages);
+          }
+        } catch (err) {
+          console.error("Failed to fetch chat history:", err);
+        } finally {
+          setChatHistoryFetched(true);
+        }
+      };
+      fetchChatHistory();
+    }
+  }, [activeTab, chatHistoryFetched, materialId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
