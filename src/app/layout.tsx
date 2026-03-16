@@ -20,30 +20,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans antialiased bg-gray-950 text-gray-100 min-h-screen`}>
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-2xl border-b border-white/5 shadow-2xl">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <html lang="en" className="dark bg-black">
+      <body className={`${inter.variable} font-sans antialiased text-zinc-100 min-h-screen selection:bg-zinc-800 selection:text-white`}>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 group-hover:scale-105 transition-all">
-                L
+              <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center text-black font-bold">
+                <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">
+              <span className="text-sm font-semibold tracking-tight text-white group-hover:text-zinc-300 transition-colors">
                 Lumina
               </span>
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <Link
                 href="/"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
               >
                 Dashboard
               </Link>
               <Link
                 href="/upload"
-                className="text-sm px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition-colors border border-white/10 backdrop-blur-md"
+                className="text-sm px-4 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors"
               >
-                + Upload
+                Upload
               </Link>
             </div>
           </div>

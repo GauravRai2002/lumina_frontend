@@ -273,25 +273,25 @@ export default function StudyPage() {
   return (
     <div className="min-h-screen max-w-5xl mx-auto px-6 py-8">
       {/* Material header */}
-      <div className="mb-6">
-        <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">
+      <div className="mb-8">
+        <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-1">
           {material?.source_type || "Material"}
         </p>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-white tracking-tight">
           {material?.title || "Loading..."}
         </h1>
       </div>
 
       {/* Tab navigation */}
-      <div className="flex gap-1 p-1 rounded-xl bg-gray-900/80 border border-gray-800/50 mb-8 overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-md bg-zinc-900/50 border border-zinc-800 mb-8 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
-                ? "bg-violet-600 text-white shadow-lg shadow-violet-600/25"
-                : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
             }`}
           >
             {tab.icon}
@@ -316,7 +316,7 @@ export default function StudyPage() {
             )}
             {notesLoading && <LoadingState label="Generating notes..." />}
             {notes && (
-              <div className="rounded-2xl bg-gray-900/50 border border-gray-800/50 p-8">
+              <div className="rounded-xl bg-black border border-zinc-800 p-8">
                 <div className="prose-notes">
                   <ReactMarkdown>{notes}</ReactMarkdown>
                 </div>
@@ -342,16 +342,16 @@ export default function StudyPage() {
               <div className="max-w-2xl mx-auto">
                 {/* Progress */}
                 <div className="flex items-center justify-between mb-6">
-                  <span className="text-sm text-gray-400">
+                  <span className="text-sm text-zinc-400">
                     Question {currentQ + 1} of {quiz.length}
                   </span>
-                  <span className="text-sm text-violet-400">
+                  <span className="text-sm text-zinc-100 font-medium">
                     Score: {score}/{currentQ + (selectedAnswer !== null ? 1 : 0)}
                   </span>
                 </div>
-                <div className="h-1 rounded-full bg-gray-800 mb-8">
+                <div className="h-1 rounded-full bg-zinc-800 mb-8">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500"
+                    className="h-full rounded-full bg-white transition-all duration-500"
                     style={{
                       width: `${((currentQ + 1) / quiz.length) * 100}%`,
                     }}
@@ -359,7 +359,7 @@ export default function StudyPage() {
                 </div>
 
                 {/* Question */}
-                <div className="rounded-2xl bg-gray-900/50 border border-gray-800/50 p-6 mb-6">
+                <div className="rounded-xl bg-black border border-zinc-800 p-6 mb-6">
                   <h3 className="text-lg text-white font-medium mb-6">
                     {quiz[currentQ].question}
                   </h3>
@@ -367,20 +367,20 @@ export default function StudyPage() {
                   <div className="space-y-3">
                     {quiz[currentQ].options.map((option, idx) => {
                       let style =
-                        "border-gray-700/50 bg-gray-800/30 hover:border-gray-600/50 text-gray-300";
+                        "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 text-zinc-300";
                       if (selectedAnswer !== null) {
                         if (idx === quiz[currentQ].correct) {
                           style =
-                            "border-emerald-500/50 bg-emerald-500/10 text-emerald-400";
+                            "border-emerald-500/50 bg-emerald-950/30 text-emerald-400";
                         } else if (
                           idx === selectedAnswer &&
                           idx !== quiz[currentQ].correct
                         ) {
                           style =
-                            "border-red-500/50 bg-red-500/10 text-red-400";
+                            "border-red-500/50 bg-red-950/30 text-red-400";
                         } else {
                           style =
-                            "border-gray-800/50 bg-gray-800/20 text-gray-600";
+                            "border-zinc-800/50 bg-zinc-900/20 text-zinc-600";
                         }
                       }
 
@@ -391,57 +391,57 @@ export default function StudyPage() {
                           disabled={selectedAnswer !== null}
                           className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${style}`}
                         >
-                          <span className="w-7 h-7 rounded-lg bg-gray-700/50 flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {selectedAnswer !== null ? (
-                              idx === quiz[currentQ].correct ? (
-                                <Check className="w-4 h-4 text-emerald-400" />
-                              ) : idx === selectedAnswer ? (
-                                <X className="w-4 h-4 text-red-400" />
-                              ) : (
-                                String.fromCharCode(65 + idx)
-                              )
-                            ) : (
-                              String.fromCharCode(65 + idx)
-                            )}
-                          </span>
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                           <span className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                             {selectedAnswer !== null ? (
+                               idx === quiz[currentQ].correct ? (
+                                 <Check className="w-4 h-4 text-emerald-400" />
+                               ) : idx === selectedAnswer ? (
+                                 <X className="w-4 h-4 text-red-400" />
+                               ) : (
+                                 String.fromCharCode(65 + idx)
+                               )
+                             ) : (
+                               String.fromCharCode(65 + idx)
+                             )}
+                           </span>
+                           {option}
+                         </button>
+                       );
+                     })}
+                   </div>
+                 </div>
 
-                {/* Explanation */}
-                {showExplanation && (
-                  <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/20 p-4 mb-6">
-                    <p className="text-sm text-indigo-300">
-                      <strong>Explanation:</strong>{" "}
-                      {quiz[currentQ].explanation}
-                    </p>
-                  </div>
-                )}
+                 {/* Explanation */}
+                 {showExplanation && (
+                   <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4 mb-6">
+                     <p className="text-sm text-zinc-300">
+                       <strong>Explanation:</strong>{" "}
+                       {quiz[currentQ].explanation}
+                     </p>
+                   </div>
+                 )}
 
-                {selectedAnswer !== null && (
-                  <button
-                    onClick={nextQuestion}
-                    className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors"
-                  >
-                    {currentQ < quiz.length - 1 ? "Next Question" : "See Results"}
-                  </button>
-                )}
+                 {selectedAnswer !== null && (
+                   <button
+                     onClick={nextQuestion}
+                     className="w-full py-2.5 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors text-sm"
+                   >
+                     {currentQ < quiz.length - 1 ? "Next Question" : "See Results"}
+                   </button>
+                 )}
               </div>
             )}
             {quizComplete && (
-              <div className="max-w-md mx-auto text-center py-12">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500/20 to-indigo-600/20 border border-violet-500/20 flex items-center justify-center mx-auto mb-6">
-                  <span className="text-2xl font-bold text-violet-400">
+              <div className="max-w-md mx-auto text-center py-12 border border-zinc-800 border-dashed rounded-xl bg-black">
+                <div className="w-20 h-20 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-white">
                     {Math.round((score / quiz.length) * 100)}%
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">
                   Quiz Complete!
                 </h3>
-                <p className="text-gray-400 mb-6">
+                <p className="text-zinc-400 mb-8 text-sm">
                   You scored {score} out of {quiz.length} questions correctly.
                 </p>
                 <button
@@ -452,7 +452,7 @@ export default function StudyPage() {
                     setScore(0);
                     setQuizComplete(false);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors text-sm"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Retry Quiz
@@ -488,11 +488,11 @@ export default function StudyPage() {
                       );
                       setFlipped(false);
                     }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors"
+                    className="p-2 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm text-gray-400">
+                  <span className="text-sm font-medium text-zinc-400">
                     {currentCard + 1} / {flashcards.length}
                   </span>
                   <button
@@ -502,7 +502,7 @@ export default function StudyPage() {
                       );
                       setFlipped(false);
                     }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors"
+                    className="p-2 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -515,20 +515,20 @@ export default function StudyPage() {
                     className={`flashcard-inner cursor-pointer relative h-64 ${flipped ? "flipped" : ""}`}
                   >
                     {/* Front */}
-                    <div className="flashcard-front absolute inset-0 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 p-8 flex flex-col items-center justify-center text-center shadow-xl">
-                      <p className="text-xs text-violet-400 uppercase tracking-wider mb-4">
+                    <div className="flashcard-front absolute inset-0 rounded-xl bg-black border border-zinc-800 p-8 flex flex-col items-center justify-center text-center shadow-lg hover:border-zinc-700 transition-colors">
+                      <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-4">
                         Question
                       </p>
                       <p className="text-lg text-white font-medium leading-relaxed">
                         {flashcards[currentCard].front}
                       </p>
-                      <p className="text-xs text-gray-600 mt-6">
+                      <p className="text-xs text-zinc-600 mt-6">
                         Tap to flip
                       </p>
                     </div>
                     {/* Back */}
-                    <div className="flashcard-back absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-950/50 to-indigo-950/50 border border-violet-500/20 p-8 flex flex-col items-center justify-center text-center shadow-xl">
-                      <p className="text-xs text-indigo-400 uppercase tracking-wider mb-4">
+                    <div className="flashcard-back absolute inset-0 rounded-xl bg-zinc-900 border border-zinc-700 p-8 flex flex-col items-center justify-center text-center shadow-lg hover:border-zinc-600 transition-colors">
+                      <p className="text-xs text-zinc-400 uppercase tracking-widest font-semibold mb-4">
                         Answer
                       </p>
                       <p className="text-lg text-white font-medium leading-relaxed">
@@ -543,18 +543,16 @@ export default function StudyPage() {
                   <div className="grid grid-cols-4 gap-2">
                     {(
                       [
-                        ["again", "Again", "text-red-400 border-red-500/20 hover:bg-red-500/10"],
-                        ["hard", "Hard", "text-orange-400 border-orange-500/20 hover:bg-orange-500/10"],
-                        ["good", "Good", "text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10"],
-                        ["easy", "Easy", "text-blue-400 border-blue-500/20 hover:bg-blue-500/10"],
+                        ["again", "Again", "text-red-400 border-red-900 bg-red-950/20 hover:bg-red-900/40"],
+                        ["hard", "Hard", "text-orange-400 border-orange-900 bg-orange-950/20 hover:bg-orange-900/40"],
+                        ["good", "Good", "text-emerald-400 border-emerald-900 bg-emerald-950/20 hover:bg-emerald-900/40"],
+                        ["easy", "Easy", "text-zinc-300 border-zinc-700 bg-zinc-800 hover:bg-zinc-700"],
                       ] as const
                     ).map(([rating, label, style]) => (
                       <button
                         key={rating}
-                        onClick={() =>
-                          handleFlashcardRating(rating)
-                        }
-                        className={`py-2.5 rounded-xl border text-sm font-medium transition-colors ${style}`}
+                        onClick={() => handleFlashcardRating(rating)}
+                        className={`py-2 rounded-md border text-xs font-semibold uppercase tracking-wider transition-colors ${style}`}
                       >
                         {label}
                       </button>
@@ -568,14 +566,14 @@ export default function StudyPage() {
 
         {/* ============ PODCAST TAB ============ */}
         {activeTab === "podcast" && (
-          <div className="max-w-lg mx-auto text-center py-12">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-violet-600/20 to-indigo-600/20 border border-violet-500/20 flex items-center justify-center mx-auto mb-6">
-              <Headphones className="w-10 h-10 text-violet-400" />
+          <div className="max-w-lg mx-auto text-center py-16 border border-zinc-800 border-dashed rounded-xl bg-black">
+            <div className="w-20 h-20 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-6">
+              <Headphones className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
               Audio Summary
             </h3>
-            <p className="text-gray-400 mb-8">
+            <p className="text-zinc-400 mb-8 text-sm">
               {notes
                 ? "Listen to your study notes read aloud. Perfect for review on the go."
                 : "Generate notes first, then listen to them as an audio summary."}
@@ -586,20 +584,20 @@ export default function StudyPage() {
                 {/* Play button */}
                 <button
                   onClick={handleSpeak}
-                  className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-medium transition-all text-lg ${
+                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors text-sm ${
                     isSpeaking
-                      ? "bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30"
-                      : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xl shadow-violet-600/25 hover:shadow-violet-500/40"
+                      ? "bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700"
+                      : "bg-white text-black hover:bg-zinc-200"
                   }`}
                 >
                   {isSpeaking ? (
                     <>
-                      <Pause className="w-6 h-6" />
+                      <Pause className="w-5 h-5" />
                       Stop Playing
                     </>
                   ) : (
                     <>
-                      <Play className="w-6 h-6" />
+                      <Play className="w-5 h-5" />
                       Play Notes
                     </>
                   )}
@@ -607,21 +605,23 @@ export default function StudyPage() {
 
                 {/* Speed control */}
                 <div className="flex items-center justify-center gap-3">
-                  <Volume2 className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Speed:</span>
-                  {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                    <button
-                      key={rate}
-                      onClick={() => setSpeechRate(rate)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        speechRate === rate
-                          ? "bg-violet-600 text-white"
-                          : "text-gray-500 hover:text-white hover:bg-gray-800/50"
-                      }`}
-                    >
-                      {rate}x
-                    </button>
-                  ))}
+                  <Volume2 className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-500 font-medium">Speed:</span>
+                  <div className="flex bg-zinc-900 rounded-md p-1 border border-zinc-800">
+                    {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                      <button
+                        key={rate}
+                        onClick={() => setSpeechRate(rate)}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          speechRate === rate
+                            ? "bg-zinc-700 text-white shadow-sm"
+                            : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                        }`}
+                      >
+                        {rate}x
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -630,7 +630,7 @@ export default function StudyPage() {
                   setActiveTab("notes");
                   generateContent("notes");
                 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors text-sm"
               >
                 <Sparkles className="w-4 h-4" />
                 Generate Notes First
@@ -641,16 +641,16 @@ export default function StudyPage() {
 
         {/* ============ CHAT TAB ============ */}
         {activeTab === "chat" && (
-          <div className="flex flex-col h-[600px]">
+          <div className="flex flex-col h-[600px] border border-zinc-800 rounded-xl bg-black overflow-hidden">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto rounded-t-2xl bg-gray-900/50 border border-gray-800/50 border-b-0 p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {chatMessages.length === 0 && (
                 <div className="text-center py-16">
-                  <MessageSquare className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-                  <h3 className="text-gray-400 font-medium mb-1">
+                  <MessageSquare className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+                  <h3 className="text-zinc-300 font-medium mb-1">
                     AI Study Tutor
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-500">
                     Ask any question about your study material and get instant,
                     contextual answers.
                   </p>
@@ -662,26 +662,26 @@ export default function StudyPage() {
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 ${
                       msg.role === "user"
-                        ? "bg-violet-600 text-white rounded-br-md"
-                        : "bg-gray-800/80 text-gray-200 rounded-bl-md border border-gray-700/50"
+                        ? "bg-zinc-100 text-black rounded-br-sm"
+                        : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-bl-sm"
                     }`}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose-notes text-sm">
+                      <div className="prose-notes text-sm leading-relaxed">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     ) : (
-                      <p className="text-sm">{msg.content}</p>
+                      <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
                     )}
                   </div>
                 </div>
               ))}
               {chatLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-bl-md px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-bl-sm px-5 py-3.5">
+                    <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Thinking...
                     </div>
@@ -692,7 +692,7 @@ export default function StudyPage() {
             </div>
 
             {/* Input */}
-            <div className="rounded-b-2xl bg-gray-900/80 border border-gray-800/50 border-t-gray-700/30 p-4">
+            <div className="bg-zinc-950 border-t border-zinc-800 p-4">
               <div className="flex gap-3">
                 <input
                   type="text"
@@ -705,12 +705,12 @@ export default function StudyPage() {
                     }
                   }}
                   placeholder="Ask a question about your material..."
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700/50 text-white placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/25 transition-all text-sm"
+                  className="flex-1 px-4 py-2.5 rounded-md bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all text-sm"
                 />
                 <button
                   onClick={handleChatSend}
                   disabled={!chatInput.trim() || chatLoading}
-                  className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:bg-gray-700 disabled:text-gray-500 text-white transition-colors"
+                  className="px-4 py-2.5 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-medium transition-colors flex items-center justify-center"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -739,15 +739,15 @@ function EmptyState({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="text-center py-16">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-600/20 border border-violet-500/20 flex items-center justify-center mx-auto mb-5">
+    <div className="text-center py-24 border border-zinc-800 border-dashed rounded-xl bg-black">
+      <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-5 text-zinc-400">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-gray-400 mb-6 max-w-md mx-auto">{description}</p>
+      <h3 className="text-lg font-medium text-zinc-100 mb-2">{title}</h3>
+      <p className="text-zinc-400 mb-6 max-w-md mx-auto text-sm">{description}</p>
       <button
         onClick={onAction}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium transition-all shadow-lg shadow-violet-600/25"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white hover:bg-zinc-200 text-black font-medium transition-colors text-sm"
       >
         <Sparkles className="w-4 h-4" />
         {buttonLabel}
@@ -758,10 +758,10 @@ function EmptyState({
 
 function LoadingState({ label }: { label: string }) {
   return (
-    <div className="text-center py-20">
-      <Loader2 className="w-10 h-10 text-violet-400 animate-spin mx-auto mb-4" />
-      <p className="text-gray-400 animate-pulse-glow">{label}</p>
-      <p className="text-xs text-gray-600 mt-2">
+    <div className="text-center py-24">
+      <Loader2 className="w-8 h-8 text-zinc-400 animate-spin mx-auto mb-4" />
+      <p className="text-zinc-300 font-medium text-sm animate-pulse">{label}</p>
+      <p className="text-xs text-zinc-500 mt-2">
         This may take a few seconds...
       </p>
     </div>

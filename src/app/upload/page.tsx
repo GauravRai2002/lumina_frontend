@@ -151,17 +151,17 @@ export default function UploadPage() {
     <div className="min-h-screen">
       <div className="max-w-2xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-3">
+          <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
             Upload Study Material
           </h1>
-          <p className="text-gray-400">
+          <p className="text-zinc-400">
             Upload a PDF, image, YouTube video, or paste text — Lumina will
             transform it into interactive study tools.
           </p>
         </div>
 
         {/* Mode switcher */}
-        <div className="flex gap-1 p-1 rounded-xl bg-gray-900/80 border border-gray-800/50 mb-8">
+        <div className="flex gap-1 p-1 rounded-md bg-zinc-900/50 border border-zinc-800 mb-8">
           {modes.map((m) => (
             <button
               key={m.id}
@@ -170,10 +170,10 @@ export default function UploadPage() {
                 setError("");
                 setSuccess("");
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
                 mode === m.id
-                  ? "bg-violet-600 text-white shadow-lg shadow-violet-600/25"
-                  : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
               }`}
             >
               {m.icon}
@@ -186,19 +186,19 @@ export default function UploadPage() {
         {mode === "file" && (
           <div
             {...getRootProps()}
-            className={`relative rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all duration-300 ${
+            className={`relative rounded-xl border border-dashed p-12 text-center cursor-pointer transition-colors duration-200 ${
               isDragActive
-                ? "border-violet-500 bg-violet-500/10"
-                : "border-gray-700/50 bg-gray-900/30 hover:border-gray-600/50 hover:bg-gray-900/50"
+                ? "border-zinc-500 bg-zinc-900"
+                : "border-zinc-800 bg-black hover:border-zinc-700 hover:bg-zinc-900/50"
             }`}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-4">
               {uploading ? (
-                <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+                <Loader2 className="w-10 h-10 text-zinc-400 animate-spin" />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-600/20 border border-violet-500/20 flex items-center justify-center">
-                  <Upload className="w-7 h-7 text-violet-400" />
+                <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-zinc-300" />
                 </div>
               )}
               <div>
@@ -207,18 +207,18 @@ export default function UploadPage() {
                     ? "Drop your file here..."
                     : "Drag & drop a file here"}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-zinc-500">
                   or click to browse • PDF, TXT, PNG, JPG (max 50MB)
                 </p>
               </div>
               <div className="flex items-center gap-3 mt-2">
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                   <FileText className="w-3.5 h-3.5" /> PDF
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                   <FileImage className="w-3.5 h-3.5" /> Images
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                   <Type className="w-3.5 h-3.5" /> TXT/MD
                 </div>
               </div>
@@ -229,8 +229,8 @@ export default function UploadPage() {
         {/* YouTube URL */}
         {mode === "youtube" && (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-gray-900/50 border border-gray-800/50 p-6">
-              <label className="block text-sm text-gray-400 mb-2">
+            <div className="rounded-xl bg-black border border-zinc-800 p-6">
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
                 YouTube Video URL
               </label>
               <input
@@ -238,16 +238,16 @@ export default function UploadPage() {
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700/50 text-white placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/25 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all text-sm"
               />
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-zinc-500 mt-2">
                 The video must have captions/subtitles enabled.
               </p>
             </div>
             <button
               onClick={handleYouTube}
               disabled={uploading || !youtubeUrl.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white font-medium transition-all shadow-lg shadow-violet-600/25 disabled:shadow-none"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-medium transition-colors text-sm"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -262,9 +262,9 @@ export default function UploadPage() {
         {/* Paste text */}
         {mode === "text" && (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-gray-900/50 border border-gray-800/50 p-6 space-y-4">
+            <div className="rounded-xl bg-black border border-zinc-800 p-6 space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Title (optional)
                 </label>
                 <input
@@ -272,11 +272,11 @@ export default function UploadPage() {
                   value={textTitle}
                   onChange={(e) => setTextTitle(e.target.value)}
                   placeholder="e.g. Organic Chemistry Ch. 5"
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700/50 text-white placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/25 transition-all"
+                  className="w-full px-4 py-2.5 rounded-md bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Study Material
                 </label>
                 <textarea
@@ -284,14 +284,14 @@ export default function UploadPage() {
                   onChange={(e) => setPastedText(e.target.value)}
                   placeholder="Paste your lecture notes, textbook content, or any study material here..."
                   rows={10}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700/50 text-white placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/25 transition-all resize-none"
+                  className="w-full px-4 py-2.5 rounded-md bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all resize-none text-sm"
                 />
               </div>
             </div>
             <button
               onClick={handlePasteText}
               disabled={uploading || !pastedText.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white font-medium transition-all shadow-lg shadow-violet-600/25 disabled:shadow-none"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-medium transition-colors text-sm"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -305,13 +305,13 @@ export default function UploadPage() {
 
         {/* Status messages */}
         {error && (
-          <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-md bg-red-950/50 border border-red-900/50 text-red-500 text-sm">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
           </div>
         )}
         {success && (
-          <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+          <div className="mt-6 flex items-center gap-2 px-4 py-3 rounded-md bg-emerald-950/50 border border-emerald-900/50 text-emerald-500 text-sm">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             {success}
           </div>
