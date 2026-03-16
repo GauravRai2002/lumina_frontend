@@ -51,6 +51,41 @@ interface HistoricalContent {
 
 import { fetchApi } from "@/lib/api";
 
+function stripMarkdown(text: string) {
+  return text
+    .replace(/^#+\s+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^\s*>\s+/gm, "")
+    .replace(/[-*+]\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function chunkText(text: string, maxLength = 400): string[] {
+  const paragraphs = text.split(/\n\s*\n/);
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const p of paragraphs) {
+    const sentences = p.match(/[^.!?]+[.!?]*\s*/g) || [p];
+    for (const sentence of sentences) {
+      if (currentChunk.length + sentence.length <= maxLength) {
+        currentChunk += sentence;
+      } else {
+        if (currentChunk.trim()) chunks.push(currentChunk.trim());
+        currentChunk = sentence;
+      }
+    }
+  }
+  if (currentChunk.trim()) chunks.push(currentChunk.trim());
+  return chunks;
+}
+
 export default function StudyPage() {
   const params = useParams();
   const materialId = params.id as string;
@@ -91,8 +126,9 @@ export default function StudyPage() {
   const [ttsLoading, setTtsLoading] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("en-US-AriaNeural");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Cache: key = `${noteId}:${voice}` → blob URL
-  const audioCacheRef = useRef<Map<string, string>>(new Map());
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Cache: key = `${noteId}:${voice}` → string[] of blob URLs
+  const audioCacheRef = useRef<Map<string, string[]>>(new Map());
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -218,7 +254,7 @@ export default function StudyPage() {
 
       // Invalidate TTS audio cache for notes when new notes are generated
       if (type === "notes") {
-        audioCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+        audioCacheRef.current.forEach((urls) => urls.forEach((url) => URL.revokeObjectURL(url)));
         audioCacheRef.current.clear();
       }
 
@@ -272,55 +308,116 @@ export default function StudyPage() {
   }
 
   async function handleSpeak() {
-    // If currently playing, stop
-    if (isSpeaking && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-      audioRef.current = null;
+    if (isSpeaking) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
       setIsSpeaking(false);
+      setTtsLoading(false);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       return;
     }
 
     if (!notes) return;
 
     const cacheKey = `${activeNoteId}:${selectedVoice}`;
-    const cachedUrl = audioCacheRef.current.get(cacheKey);
+    const cachedUrls = audioCacheRef.current.get(cacheKey);
 
-    const playAudio = (audioUrl: string) => {
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.onended = () => setIsSpeaking(false);
-      audio.onerror = () => setIsSpeaking(false);
-      audio.play();
+    const playChunks = async (urls: string[], signal: AbortSignal) => {
       setIsSpeaking(true);
+      for (let i = 0; i < urls.length; i++) {
+        if (signal.aborted) break;
+        await new Promise<void>((resolve) => {
+          const audio = new Audio(urls[i]);
+          audioRef.current = audio;
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+      }
+      if (!signal.aborted) {
+        setIsSpeaking(false);
+      }
+      audioRef.current = null;
     };
 
-    // Serve from cache if available
-    if (cachedUrl) {
-      playAudio(cachedUrl);
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    if (cachedUrls && cachedUrls.length > 0) {
+      playChunks(cachedUrls, signal);
       return;
     }
 
     setTtsLoading(true);
     try {
-      const res = await fetchApi("/tts", {
-        method: "POST",
-        body: JSON.stringify({ text: notes, voice: selectedVoice }),
-      });
+      const cleanText = stripMarkdown(notes);
+      const chunks = chunkText(cleanText, 400);
 
-      if (!res.ok) throw new Error("TTS request failed");
+      const newUrls: string[] = [];
+      audioCacheRef.current.set(cacheKey, newUrls);
 
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
+      let playIndex = 0;
+      
+      const playbackLoop = async () => {
+        setIsSpeaking(true);
+        while (playIndex < chunks.length) {
+          if (signal.aborted) break;
+          // Wait for the next chunk to be ready
+          if (playIndex >= newUrls.length) {
+            await new Promise(r => setTimeout(r, 100)); // poll
+            continue;
+          }
+          const audioUrl = newUrls[playIndex];
+          await new Promise<void>((resolve) => {
+            if (signal.aborted) return resolve();
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            audio.onended = () => resolve();
+            audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
+          });
+          playIndex++;
+        }
+        if (!signal.aborted) setIsSpeaking(false);
+        audioRef.current = null;
+      };
 
-      // Store in cache
-      audioCacheRef.current.set(cacheKey, audioUrl);
+      for (let i = 0; i < chunks.length; i++) {
+        if (signal.aborted) break;
+        
+        const res = await fetchApi("/tts", {
+          method: "POST",
+          body: JSON.stringify({ text: chunks[i], voice: selectedVoice }),
+          signal // propagate cancellation
+        });
 
-      playAudio(audioUrl);
-    } catch (err) {
-      console.error("TTS failed:", err);
+        if (!res.ok) throw new Error("TTS request failed");
+        
+        const blob = await res.blob();
+        if (signal.aborted) break;
+        
+        const audioUrl = URL.createObjectURL(blob);
+        newUrls.push(audioUrl);
+        
+        // Start streaming immediately when first chunk arrives
+        if (i === 0) {
+          setTtsLoading(false);
+          playbackLoop();
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        console.error("TTS failed:", err);
+      }
     } finally {
-      setTtsLoading(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTtsLoading(false);
+      }
     }
   }
 
