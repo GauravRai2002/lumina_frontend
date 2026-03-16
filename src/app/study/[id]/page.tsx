@@ -149,7 +149,7 @@ export default function StudyPage() {
   }, [materialId]);
 
   useEffect(() => {
-    if (activeTab === "chat" && !chatHistoryFetched) {
+    if (!chatHistoryFetched) {
       const fetchChatHistory = async () => {
         try {
           const res = await fetchApi(`/chat?materialId=${materialId}`);
@@ -165,7 +165,7 @@ export default function StudyPage() {
       };
       fetchChatHistory();
     }
-  }, [activeTab, chatHistoryFetched, materialId]);
+  }, [chatHistoryFetched, materialId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
